@@ -193,3 +193,23 @@ def plot_coverage(st):
     ax.set_ylabel("students")
     ax.set_title("Coverage per student")
     return fig
+
+
+# cache
+# rebuild after changing the cleaning code, or dete data/processed/
+
+def proximity(rebuild=False):
+    path = PROCESSED / "proximity.parquet"
+    if rebuild or not path.exists():
+        PROCESSED.mkdir(exist_ok=True)
+        clean_bt(load_bt()).to_parquet(path)
+    return pd.read_parquet(path)
+
+def student_table(rebuild=False):
+    path = PROCESSED / "students.parquet"
+    if rebuild or not path.exists():
+        PROCESSED.mkdir(exist_ok=True)
+        fb = clean_fb(load_fb())
+        sms = clean_sms(load_sms())
+        students(load_bt(), fb, load_calls(), sms).to_parquet(path)
+    return pd.read_parquet(path)

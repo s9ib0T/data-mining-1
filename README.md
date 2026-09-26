@@ -16,3 +16,5 @@ When opening a notebook, select `.venv/bin/python` as the kernel; the notebooks 
 Do not edit the files in `data/copenhagen/`. Save changed data to `data/processed/`.
 
 Analysis code is in `src/`, and the notebooks import it.
+
+The other notebooks get the cleaned data from `pp.proximity()` and `pp.student_table()`. Both rebuild `data/processed/` from the raw files when it is missing, so deleting that folder is safe.
