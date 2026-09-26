@@ -14,7 +14,7 @@ EMPTY = -1 # user_b of an empty scan
 OUTSIDE = -2 # user_b of a device outside the study
 
 
-# loading
+# loading data
 
 def load_bt():
     # header line starts with "# " so skip it and name the cols
@@ -131,3 +131,19 @@ def plot_pair_bins(real):
     ax.set_ylabel("pairs (log scale)")
     ax.set_title("Time together per pair")
     return fig
+
+
+# cleaning
+
+def clean_bt(bt):
+    # keep real pairs, drop the 4 rows with rssi +20
+    return bt[(bt.user_b >= 0) & (bt.rssi < 0)].reset_index(drop=True)
+
+def clean_fb(fb):
+    # drop self-loops
+    return fb[fb.user_a != fb.user_b].reset_index(drop=True)
+
+def clean_sms(sms):
+    # drop duplicates
+    return sms.drop_duplicates().reset_index(drop=True)
+  
