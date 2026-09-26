@@ -13,6 +13,9 @@ DAY = 86400 # seconds
 EMPTY = -1 # user_b of an empty scan
 OUTSIDE = -2 # user_b of a device outside the study
 
+# default size for single plots
+plt.rcParams["figure.figsize"] = (6, 3.5)
+
 
 # loading data
 
@@ -66,7 +69,7 @@ def plot_row_types(bt):
             "outside device": (bt.user_b == OUTSIDE).mean(),
         }
     )
-    fig, ax = plt.subplots(figsize=(6, 3.5))
+    fig, ax = plt.subplots()
     ax.bar(shares.index, shares)
     ax.set_ylabel("share of rows")
     ax.set_title("Bluetooth rows by type")
@@ -91,8 +94,11 @@ def plot_rssi(bt):
 
 
 def plot_activity(real):
-    by_hour = (real.timestamp % DAY // 3600).value_counts().sort_index()
-    by_day = (real.timestamp // DAY).value_counts().sort_index()
+    hour = (real.timestamp % DAY) // 3600
+    day = real.timestamp // DAY
+    by_hour = hour.value_counts().sort_index()
+    by_day = day.value_counts().sort_index()
+    # day 0 is a sunday, so days 0 and 6 of each week are weekend
     weekend = by_day[(by_day.index % 7).isin([0, 6])]
     weekday = by_day.drop(weekend.index)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
@@ -110,8 +116,9 @@ def plot_activity(real):
 
 def plot_partners(real):
     pairs = real[["user_a", "user_b"]].drop_duplicates()
+    # each pair counts once for both students
     n = pd.concat([pairs.user_a, pairs.user_b]).value_counts()
-    fig, ax = plt.subplots(figsize=(6, 3.5))
+    fig, ax = plt.subplots()
     ax.hist(n, bins=50)
     ax.set_xlabel("distinct partners over 28 days")
     ax.set_ylabel("students")
@@ -120,8 +127,9 @@ def plot_partners(real):
 
 
 def plot_pair_bins(real):
+    # bins per pair
     n = real.groupby(["user_a", "user_b"]).size()
-    fig, ax = plt.subplots(figsize=(6, 3.5))
+    fig, ax = plt.subplots()
     # log-spaced edges rounded to whole bins, so small counts get no empty gaps
     edges = np.unique(np.geomspace(1, n.max() + 1, 40).astype(int))
     ax.hist(n, bins=edges)
@@ -146,4 +154,42 @@ def clean_fb(fb):
 def clean_sms(sms):
     # drop duplicates
     return sms.drop_duplicates().reset_index(drop=True)
-  
+
+
+# student table
+
+def students(bt, fb, calls, sms):
+    # bt is raw, since coverage needs the rows without a pair
+    # fb and sms are cleaned
+    real = bt[bt.user_b >= 0]
+    in_bt = set().union(real.user_a, real.user_b)
+    in_fb = set().union(fb.user_a, fb.user_b)
+    in_comm = set().union(calls.caller, calls.callee, sms.sender, sms.recipient)
+    # every id in any file, also students with only empty scans
+    ids = pd.Index(sorted(set().union(bt.user_a, in_bt, in_fb, in_comm)), name="user")
+
+    # counts per student of 5 minute time slots (bins) where:
+    # phone on: own row of any kind, or seen by another student
+    n_on = presence(bt).groupby("user").size()
+    # own phone scanned
+    n_own = bt.groupby("user_a").timestamp.nunique()
+    # own scan found an outside device
+    n_outside = bt[bt.user_b == OUTSIDE].groupby("user_a").timestamp.nunique()
+
+    st = pd.DataFrame(index=ids)
+    st["coverage"] = n_on.reindex(ids, fill_value=0) / N_BINS
+    # 0 when no outside device was seen, empty when the student has no own rows
+    st["outside_share"] = n_outside.reindex(n_own.index, fill_value=0) / n_own
+    # divide by n_own, since only own scans can find an outside device
+    st["in_bt"] = ids.isin(in_bt)
+    st["in_fb"] = ids.isin(in_fb)
+    st["in_comm"] = ids.isin(in_comm)
+    return st
+
+def plot_coverage(st):
+    fig, ax = plt.subplots()
+    ax.hist(st.coverage[st.coverage > 0], bins=40)
+    ax.set_xlabel("coverage (share of 5 minute bins)")
+    ax.set_ylabel("students")
+    ax.set_title("Coverage per student")
+    return fig
