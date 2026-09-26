@@ -17,4 +17,4 @@ Do not edit the files in `data/copenhagen/`. Save changed data to `data/processe
 
 Analysis code is in `src/`, and the notebooks import it.
 
-The other notebooks get the cleaned data from `pp.proximity()` and `pp.student_table()`. Both rebuild `data/processed/` from the raw files when it is missing, so deleting that folder is safe.
+`notebooks/preprocess.ipynb` cleans the raw data and saves to `data/processed/`. `friends.ipynb` and `isolated.ipynb` load data with `proximity()` and `student_table()` from `src/preprocess.py`. No need for `preprocess.ipynb` to run first, both funcs builds `data/processed/` from the raw files if needed. Deleting `processed/` is safe.
