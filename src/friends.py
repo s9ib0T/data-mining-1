@@ -36,8 +36,10 @@ def transactions(pairs, window=WINDOW):
     # one basket per student and window, with the student and everyone near them
     # student in own basket, else pair (1, 2) never gives itemset {1, 2}
     # example below: window 0 with pairs (1, 2) and (1, 3)
+
     w = pairs.timestamp // window
     a, b = pairs.user_a, pairs.user_b
+    
     # each pair gives 4 rows, a and b both go in a's and b's basket
     # user = basket owner, item = student in the basket
     #   w  user  item
@@ -49,12 +51,14 @@ def transactions(pairs, window=WINDOW):
     #   0     1     3
     #   0     3     1
     #   0     3     3
+    
     rows = pd.concat([
         pd.DataFrame({"w": w, "user": a, "item": a}),
         pd.DataFrame({"w": w, "user": a, "item": b}),
         pd.DataFrame({"w": w, "user": b, "item": a}),
         pd.DataFrame({"w": w, "user": b, "item": b}),
-    ])
+    ]).reset_index(drop=True)
+
     # crosstab counts rows per basket (w, user) and item
     #   item    1  2  3
     #   w user
@@ -67,4 +71,26 @@ def transactions(pairs, window=WINDOW):
     #   0 1     True   True   True
     #     2     True   True  False
     #     3     True  False   True
+    
     return pd.crosstab([rows.w, rows.user], rows.item) > 0
+
+
+# mining
+
+def mine(X, min_count):
+    # min_count: transactions a group must appear in
+    # low_memory checks candidates in parts, the default needs 37 GB with teaching hours
+    return apriori(
+        X,
+        min_support=min_count / len(X),
+        use_colnames=True, 
+        low_memory=True
+    )
+
+
+def maximal(fi):
+    # groups of 2 or more with no frequent superset
+    groups = fi[fi.itemsets.apply(len) >= 2]
+    sets = list(groups.itemsets)
+    keep = [not any(s != t and s.issubset(t) for t in sets) for s in sets]
+    return groups[keep]
