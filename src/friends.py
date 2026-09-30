@@ -94,3 +94,39 @@ def maximal(fi):
     sets = list(groups.itemsets)
     keep = [not any(s != t and s.issubset(t) for t in sets) for s in sets]
     return groups[keep]
+
+# results
+
+def score(fi, friends, users):
+    # frequent pairs where both students have facebook data
+    # every pair inside a frequent group is frequent too, so this covers all groups
+
+    pairs = {s for s in fi.itemsets if len(s) == 2 and s.issubset(users)}
+    hits = len(pairs.intersection(friends))
+    n = len(users)
+    possible = n * (n - 1) / 2
+    share = hits / len(pairs)
+    return pd.Series({
+        "pairs": len(pairs),
+        "friend share": share,
+        "times baseline": share / (len(friends) / possible),
+        "friends found": hits / len(friends),
+    })
+
+
+def group_share(group, friends):
+    # share of pairs in the group that are facebook friends
+    
+    pairs = [frozenset(p) for p in combinations(group, 2)]
+    return sum(p in friends for p in pairs) / len(pairs)
+
+
+def plot_shares(shares):
+    fig, ax = plt.subplots()
+    ax.barh(shares.index, shares)
+    ax.bar_label(ax.containers[0], labels=[f"{s:.0%}" for s in shares], padding=3)
+    ax.invert_yaxis()
+    ax.set_xlim(0, 1.1)
+    ax.set_xlabel("share of pairs that are facebook friends")
+    ax.set_title("Friendship by kind of proximity")
+    return fig
