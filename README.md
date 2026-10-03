@@ -18,3 +18,5 @@ Do not edit the files in `data/copenhagen/`. Save changed data to `data/processe
 Analysis code is in `src/`, and the notebooks import it.
 
 `notebooks/preprocess.ipynb` cleans the raw data and saves to `data/processed/`. `friends.ipynb` and `isolated.ipynb` load data with `proximity()` and `student_table()` from `src/preprocess.py`. No need for `preprocess.ipynb` to run first, both funcs builds `data/processed/` from the raw files if needed. Deleting `processed/` is safe.
+
+`friends.ipynb` answers question A, with the code in `src/friends.py`. The whole notebook runs in about 70 seconds; the FP-Growth cell takes half of that.
