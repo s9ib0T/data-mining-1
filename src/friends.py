@@ -87,13 +87,13 @@ def mine(X, min_count):
         low_memory=True
     )
 
-
 def maximal(fi):
     # groups of 2 or more with no frequent superset
     groups = fi[fi.itemsets.apply(len) >= 2]
     sets = list(groups.itemsets)
     keep = [not any(s != t and s.issubset(t) for t in sets) for s in sets]
     return groups[keep]
+
 
 # results
 
@@ -102,7 +102,7 @@ def score(fi, friends, users):
     # every pair inside a frequent group is frequent too, so this covers all groups
 
     pairs = {s for s in fi.itemsets if len(s) == 2 and s.issubset(users)}
-    hits = len(pairs.intersection(friends))
+    hits = sum(p in friends for p in pairs)
     n = len(users)
     possible = n * (n - 1) / 2
     share = hits / len(pairs)
@@ -113,13 +113,11 @@ def score(fi, friends, users):
         "friends found": hits / len(friends),
     })
 
-
 def group_share(group, friends):
     # share of pairs in the group that are facebook friends
     
     pairs = [frozenset(p) for p in combinations(group, 2)]
     return sum(p in friends for p in pairs) / len(pairs)
-
 
 def plot_shares(shares):
     fig, ax = plt.subplots()
