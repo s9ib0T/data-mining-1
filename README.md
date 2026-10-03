@@ -1,4 +1,4 @@
-# uu-data-mining-1
+# data-mining-1
 
 ## Setup
 
