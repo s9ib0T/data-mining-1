@@ -54,6 +54,7 @@ def load_sms():
 def presence(bt):
     # one row per (bin, student) where the phone was on
     # own row of any kind, or seen by another student
+    # SELECT timestamp, user_a AS user FROM bt UNION SELECT timestamp, user_b FROM bt WHERE user_b >= 0
     own = bt[["timestamp", "user_a"]].rename(columns={"user_a": "user"})
     seen = bt.loc[bt.user_b >= 0, ["timestamp", "user_b"]].rename(columns={"user_b": "user"})
     return pd.concat([own, seen]).drop_duplicates()
@@ -62,6 +63,7 @@ def presence(bt):
 # exploration plots
 
 def plot_row_types(bt):
+    # SELECT AVG(user_b >= 0), AVG(user_b = EMPTY), AVG(user_b = OUTSIDE) FROM bt
     shares = pd.Series(
         {
             "real pair": (bt.user_b >= 0).mean(),
@@ -96,10 +98,13 @@ def plot_rssi(bt):
 def plot_activity(real):
     hour = (real.timestamp % DAY) // 3600
     day = real.timestamp // DAY
+    # SELECT hour, COUNT(*) FROM real GROUP BY hour ORDER BY hour
     by_hour = hour.value_counts().sort_index()
+    # SELECT day, COUNT(*) FROM real GROUP BY day ORDER BY day
     by_day = day.value_counts().sort_index()
     # day 0 is a sunday, so days 0 and 6 of each week are weekend
     weekend = by_day[(by_day.index % 7).isin([0, 6])]
+    # SELECT * FROM by_day EXCEPT SELECT * FROM weekend
     weekday = by_day.drop(weekend.index)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
     ax1.bar(by_hour.index, by_hour.values / 1e3)
@@ -115,8 +120,10 @@ def plot_activity(real):
 
 
 def plot_partners(real):
+    # SELECT DISTINCT user_a, user_b FROM real
     pairs = real[["user_a", "user_b"]].drop_duplicates()
     # each pair counts once for both students
+    # SELECT user, COUNT(*) FROM (SELECT user_a AS user FROM pairs UNION ALL SELECT user_b FROM pairs) GROUP BY user
     n = pd.concat([pairs.user_a, pairs.user_b]).value_counts()
     fig, ax = plt.subplots()
     ax.hist(n, bins=50)
@@ -128,6 +135,7 @@ def plot_partners(real):
 
 def plot_pair_bins(real):
     # bins per pair
+    # SELECT user_a, user_b, COUNT(*) FROM real GROUP BY user_a, user_b
     n = real.groupby(["user_a", "user_b"]).size()
     fig, ax = plt.subplots()
     # log-spaced edges rounded to whole bins, so small counts get no empty gaps
@@ -170,15 +178,20 @@ def students(bt, fb, calls, sms):
 
     # counts per student of 5 minute time slots (bins) where:
     # phone on: own row of any kind, or seen by another student
+    # SELECT user, COUNT(*) FROM presence(bt) GROUP BY user
     n_on = presence(bt).groupby("user").size()
     # own phone scanned
+    # SELECT user_a, COUNT(DISTINCT timestamp) FROM bt GROUP BY user_a
     n_own = bt.groupby("user_a").timestamp.nunique()
     # own scan found an outside device
+    # SELECT user_a, COUNT(DISTINCT timestamp) FROM bt WHERE user_b = OUTSIDE GROUP BY user_a
     n_outside = bt[bt.user_b == OUTSIDE].groupby("user_a").timestamp.nunique()
 
     st = pd.DataFrame(index=ids)
+    # SELECT user, COALESCE(n_on, 0) / N_BINS FROM ids LEFT JOIN n_on USING (user)
     st["coverage"] = n_on.reindex(ids, fill_value=0) / N_BINS
     # 0 when no outside device was seen, empty when the student has no own rows
+    # SELECT user, COALESCE(n_outside, 0) / n_own FROM ids LEFT JOIN n_own USING (user) LEFT JOIN n_outside USING (user)
     st["outside_share"] = n_outside.reindex(n_own.index, fill_value=0) / n_own
     # divide by n_own, since only own scans can find an outside device
     st["in_bt"] = ids.isin(in_bt)
