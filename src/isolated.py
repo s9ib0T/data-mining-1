@@ -35,3 +35,16 @@ def features(pairs, observed, ids):
     # SELECT user, COUNT(DISTINCT other) FROM near GROUP BY user
     f["partners"] = near.groupby("user").other.nunique().reindex(ids, fill_value=0)
     return f
+
+
+# anomaly detection
+
+def scale(f, log=True):
+    # log10 spreads out the low end, z-scores give both features the same weight
+    X = np.log10(f) if log else f
+    return pd.DataFrame(StandardScaler().fit_transform(X), index=f.index, columns=f.columns)
+
+def lof(X, k=20):
+    # sklearn stores the negative score -> flip it
+    # about 1 is normal, higher is more unusual
+    return pd.Series(-LocalOutlierFactor(n_neighbors=k).fit(X).negative_outlier_factor_, index=X.index)
