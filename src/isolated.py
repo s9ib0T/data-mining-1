@@ -48,3 +48,25 @@ def lof(X, k=20):
     # sklearn stores the negative score -> flip it
     # about 1 is normal, higher is more unusual
     return pd.Series(-LocalOutlierFactor(n_neighbors=k).fit(X).negative_outlier_factor_, index=X.index)
+
+def plot_lof(f, s, top, median):
+    # SELECT user FROM f EXCEPT SELECT user FROM top
+    rest = f.index.drop(top)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+    ax1.scatter(f.partners[rest], f.company[rest], s=8, label="other students")
+    ax1.scatter(f.partners[top], f.company[top], s=30, marker="s", label=f"top {len(top)} LOF")
+    ax1.axhline(median, color="gray", linestyle="--", label="median company")
+    ax1.set_xscale("log")
+    ax1.set_yscale("log")
+    ax1.set_xlabel("partners (log scale)")
+    ax1.set_ylabel("share of hours in company (log scale)")
+    ax1.set_title("Students outside class")
+    ax1.legend()
+    ax2.hist(s, bins=40)
+    ax2.axvline(s[top].min(), color="gray", linestyle="--", label=f"top {len(top)}")
+    ax2.set_xlabel("LOF score")
+    ax2.set_ylabel("students")
+    ax2.set_title("LOF scores")
+    ax2.legend()
+    return fig
+
