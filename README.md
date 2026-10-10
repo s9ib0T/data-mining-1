@@ -2,6 +2,7 @@
 
 Using the Copenhagen Networks Study dataset, we aim to answer the following:
 > Can you tell who someone's friends are just from which phones are near theirs?
+> Can we find first-year students who are not part of any friend group?
 
 ## Setup
 
@@ -25,3 +26,5 @@ Analysis code is in `src/`, and the notebooks import it.
 `notebooks/preprocess.ipynb` cleans the raw data and saves to `data/processed/`. `friends.ipynb` and `isolated.ipynb` load data with `proximity()` and `student_table()` from `src/preprocess.py`. No need for `preprocess.ipynb` to run first, both funcs builds `data/processed/` from the raw files if needed. Deleting `processed/` is safe.
 
 `friends.ipynb` answers the question "Can you tell who someone's friends are just from which phones are near theirs?"
+
+`isolated.ipynb` answers the question "Can we find first-year students who are not part of any friend group?".
