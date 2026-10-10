@@ -70,3 +70,23 @@ def plot_lof(f, s, top, median):
     ax2.legend()
     return fig
 
+
+# checks
+
+def profile(ids, st, fb):
+    # facebook friends and calls or sms for a set of students
+    # friend counts only for students with facebook data
+    
+    # SELECT user, COUNT(*) AS count FROM (SELECT user_a AS user FROM fb UNION ALL SELECT user_b FROM fb) GROUP BY user
+    friends = pd.concat([fb.user_a, fb.user_b]).value_counts()
+    
+    # SELECT user FROM st WHERE user IN ids AND in_fb
+    with_fb = ids[st.in_fb[ids]]
+    return pd.Series({
+        "students": len(ids),
+        # SELECT MEDIAN(count) FROM friends WHERE user IN with_fb
+        "median friends": friends[with_fb].median(),
+        # SELECT AVG(in_comm) FROM st WHERE user IN ids
+        "calls or sms": st.in_comm[ids].mean(),
+    })
+
