@@ -2,6 +2,7 @@
 
 Using the Copenhagen Networks Study dataset, we aim to answer the following:
 > Can you tell who someone's friends are just from which phones are near theirs?
+> 
 > Can we find first-year students who are not part of any friend group?
 
 ## Setup
